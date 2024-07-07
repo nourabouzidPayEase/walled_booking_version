@@ -353,7 +353,6 @@ function BookingForm() {
                 </div>
               </div>
 
-
               <div className="item">
                 <PaymentForm price={totalPrice} />
               </div>
