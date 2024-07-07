@@ -5,19 +5,18 @@ import {
   Box,
   Button,
   FormControl,
-  FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
   InputLabel,
-  Radio,
   RadioGroup,
   Typography,
   TextField as Input,
 } from "@mui/material";
 import { formatCardNumber, formatExpiryDate } from "./formatting";
 import { CalendarToday, CreditCard } from "@mui/icons-material";
-const PaymentForm = () => {
+
+const PaymentForm = ({ price }) => {
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -31,23 +30,23 @@ const PaymentForm = () => {
       console.log("Processing payment...", values);
     },
   });
+
   return (
     <>
       <Box
         sx={{
-         py: 0.1,
+          py: 0.1,
           px: { xs: 2, md: 7 },
           maxWidth: "67rem",
           margin: "0 auto",
           my: 0,
         }}
       >
-        {/* <SharedLayout> */}
         <Box>
           <Typography
             variant="h5"
             className="fw-500 text-center"
-            sx={{ pb: 3 }}
+            sx={{ pb: 2 }}
           >
             Pay with card
           </Typography>
@@ -65,20 +64,30 @@ const PaymentForm = () => {
                     fontWeight: "500",
                   },
                 }}
-              >
-            
-              </RadioGroup>
+              ></RadioGroup>
             </FormControl>
             <Box>
               <img
-                src="/assets/svg/visa.svg"
+                src="/image.png"
                 alt="visa"
                 width={40}
                 height={40}
               />
               <img
-                src="/assets/svg/master_card.svg"
-                alt="visa"
+                src="/mastercard_1.png"
+                alt="mastercard"
+                width={40}
+                height={40}
+              />
+               <img
+                src="/stripe.png"
+                alt="mastercard"
+                width={40}
+                height={40}
+              />
+                 <img
+                src="/gpay.png"
+                alt="mastercard"
                 width={40}
                 height={40}
               />
@@ -134,7 +143,6 @@ const PaymentForm = () => {
                       }}
                       inputProps={{ maxLength: 19 }}
                       placeholder="1234 1234 1234 1234"
-                      // placeholder="e.g John Doe"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="end">
@@ -212,12 +220,11 @@ const PaymentForm = () => {
                 }}
                 className="normal-text"
               >
-                Pay Now $10
+                Pay Now ${price}
               </Button>
             </form>
           </Box>
         </Box>
-        {/* </SharedLayout> */}
       </Box>
     </>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import {
@@ -27,8 +27,7 @@ const stripePromise = loadStripe('--');
 function BookingForm() {
 
   const cities = ["Agadir", "Casablanca", "Rabat", "Marakech", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose"];
-  const dailyRate = 50; // Example daily rate
-
+  const dailyRate = 30; // Updated daily rate
 
   const [pickUpDate, setPickUpDate] = useState(null);
   const [returnDate, setReturnDate] = useState(null);
@@ -44,19 +43,6 @@ function BookingForm() {
   const [suggestions, setSuggestions] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
-  const calculateTotalPrice = (date, type) => {
-    let startDate = pickUpDate;
-    let endDate = returnDate;
-
-    if (type === 'pickUp') startDate = date;
-    if (type === 'return') endDate = date;
-
-    if (startDate && endDate) {
-      const diffTime = Math.abs(endDate - startDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Include both start and end dates
-      setTotalPrice(diffDays * dailyRate);
-    }
-  };
   const assurances = [
     { name: "Standard Insurance", price: 10 },
     { name: "Premium Insurance", price: 20 },
@@ -64,11 +50,33 @@ function BookingForm() {
   ];
 
   const enhancements = [
-    { name: "GPS Navigation Device", price: 5 },
-    { name: "Booster Seat", price: 3 },
-    { name: "Baby Car Seat", price: 4 },
+    { name: "GPS Navigation Device", price: 50 },
+    { name: "Booster Seat", price: 30 },
+    { name: "Baby Car Seat", price: 41 },
   ];
 
+  const calculateTotalPrice = (startDate, endDate, assurances, enhancements) => {
+    if (startDate && endDate) {
+      const diffTime = Math.abs(endDate - startDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Include both start and end dates
+
+      let assurancePrice = assurances.reduce((total, assurance) => {
+        const selectedAssurance = assurances.find(a => a.name === assurance);
+        return total + (selectedAssurance ? selectedAssurance.price : 0);
+      }, 0);
+
+      let enhancementPrice = enhancements.reduce((total, enhancement) => {
+        const selectedEnhancements = enhancements.find(a => a.name === enhancement);
+        return total + (selectedEnhancements ? selectedEnhancements.price : 0);
+      }, 0);
+
+      setTotalPrice(diffDays * dailyRate + assurancePrice + enhancementPrice);
+    }
+  };
+
+  useEffect(() => {
+    calculateTotalPrice(pickUpDate, returnDate, selectedAssurances, selectedEnhancements);
+  }, [pickUpDate, returnDate, selectedAssurances, selectedEnhancements]);
 
   const onSuggestionsFetchRequested = ({ value }) => {
     setSuggestions(getSuggestions(value));
@@ -98,8 +106,6 @@ function BookingForm() {
     if (type === "return") setReturnTime(time);
   };
 
-
-
   const handleAssuranceClick = (assurance) => {
     setSelectedAssurances(prevAssurances => {
       if (prevAssurances.includes(assurance)) {
@@ -110,16 +116,14 @@ function BookingForm() {
     });
   };
 
-  const handleEnhancementClick = (enhancement) => {
+  const handleEnhancementClick = (enhancementName) => {
     setSelectedEnhancements(prevEnhancements => {
-      const exists = prevEnhancements.find(e => e.name === enhancement.name);
-      if (exists) {
-        return prevEnhancements.filter(e => e.name !== enhancement.name);
+      if (prevEnhancements.includes(enhancementName)) {
+        return prevEnhancements.filter(e => e !== enhancementName);
       } else {
-        return [...prevEnhancements, enhancement];
+        return [...prevEnhancements, enhancementName];
       }
     });
-    calculateTotalPrice();
   };
 
 
@@ -183,8 +187,6 @@ function BookingForm() {
     }
   };
 
-
-
   return (
     <div className="wrapper">
       <div className="main">
@@ -201,7 +203,7 @@ function BookingForm() {
                 transform: `translateX(${currentSlide * -100}%)`,
               }}
             >
-              <div className="item ">
+              <div className="item">
                 <div className="date margin">
                   <label htmlFor="pickUp">Pick-Up date</label>
                   <div className="date-picker-container" id="pickUp">
@@ -230,12 +232,9 @@ function BookingForm() {
                       </div>
                     )}
                   </div>
-
-
                   <div className="time-picker-container">
                     <label htmlFor="pickUpTime">Pick-Up time</label>
                     <DatePicker
-                      className=""
                       selected={pickUpTime}
                       onChange={(time) => handleTimeChange(time, "pickUp")}
                       showTimeSelect
@@ -289,7 +288,7 @@ function BookingForm() {
                 </div>
                 <div className="date city-pick-container margin">
                   <label>City</label>
-                  <div >
+                  <div>
                     <Autosuggest
                       suggestions={suggestions}
                       onSuggestionsFetchRequested={onSuggestionsFetchRequested}
@@ -305,65 +304,36 @@ function BookingForm() {
                   </div>
                 </div>
               </div>
-
-              <div className="item">
-                <div className="car-container">
-                  <img src="https://image.elite-auto.fr//visuel/BMW/bmw_23x1msport23d4wdsu3b_angularfront.png" alt="Car" className="car-image" />
-                  <div className="total-price">
-                    <h3>Price for 4 days ${totalPrice}</h3>
-                  </div>
-                </div>
-              </div>
-
               <div className="item">
                 <div className="date margin">
                   <label htmlFor="pickUp">Car assurance</label>
                   <div className="date-picker-container" id="pickUp">
                     <div className="assurance-container">
-                      <div
-                        className={`assurance-option ${selectedAssurances.includes('Standard Insurance') ? 'selected' : ''}`}
-                        onClick={() => handleAssuranceClick('Standard Insurance')}
-                      >
-                        Standard Insurance
-                      </div>
-                      <div
-                        className={`assurance-option ${selectedAssurances.includes('Premium Insurance') ? 'selected' : ''}`}
-                        onClick={() => handleAssuranceClick('Premium Insurance')}
-                      >
-                        Premium Insurance
-                      </div>
-                      <div
-                        className={`assurance-option ${selectedAssurances.includes('No Insurance') ? 'selected' : ''}`}
-                        onClick={() => handleAssuranceClick('No Insurance')}
-                      >
-                        No Insurance
-                      </div>
+                      {assurances.map((assurance) => (
+                        <div
+                          key={assurance.name}
+                          className={`assurance-option ${selectedAssurances.includes(assurance.name) ? 'selected' : ''}`}
+                          onClick={() => handleAssuranceClick(assurance.name)}
+                        >
+                          {assurance.name}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-
                 <div className="date margin">
                   <label htmlFor="pickUp">Trip Enhancements</label>
                   <div className="date-picker-container" id="pickUp">
                     <div className="assurance-container">
-                      <div
-                        className={`assurance-option ${selectedAssurances.includes('GPS Navigation Device') ? 'selected' : ''}`}
-                        onClick={() => handleAssuranceClick('GPS Navigation Device')}
-                      >
-                        GPS Navigation Device
-                      </div>
-                      <div
-                        className={`assurance-option ${selectedAssurances.includes('Booster Seat') ? 'selected' : ''}`}
-                        onClick={() => handleAssuranceClick('Booster Seat')}
-                      >
-                        Booster Seat
-                      </div>
-                      <div
-                        className={`assurance-option ${selectedAssurances.includes('Baby Car Seat') ? 'selected' : ''}`}
-                        onClick={() => handleAssuranceClick('Baby Car Seat')}
-                      >
-                        Baby Car Seat
-                      </div>
+                      {enhancements.map((enhancement) => (
+                        <div
+                          key={enhancement.name}
+                          className={`assurance-option ${selectedEnhancements.includes(enhancement.name) ? 'selected' : ''}`}
+                          onClick={() => handleEnhancementClick(enhancement.name)}
+                        >
+                          {enhancement.name}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -371,11 +341,22 @@ function BookingForm() {
               </div>
 
               <div className="item">
-                <PaymentForm />
+                <div className="car-container">
+                  <img src="https://image.elite-auto.fr//visuel/BMW/bmw_23x1msport23d4wdsu3b_angularfront.png" alt="Car" className="car-image" />
+                  <div className="total-price">
+                    <h3>
+                      {pickUpDate && returnDate && Math.ceil((returnDate - pickUpDate) / (1000 * 60 * 60 * 24)) >= 1
+                        ? `Price for ${Math.ceil((returnDate - pickUpDate) / (1000 * 60 * 60 * 24)) + 1} days $${totalPrice}`
+                        : 'Choose start and end date'}
+                    </h3>
+                  </div>
+                </div>
               </div>
 
 
-
+              <div className="item">
+                <PaymentForm price={totalPrice} />
+              </div>
             </div>
           </div>
           <div className="btns margin">
@@ -392,49 +373,6 @@ function BookingForm() {
           </div>
         </div>
       </div>
-      {/* <div className="carousel">
-        <div
-          className="carousel-inner"
-          style={{
-            transform: `translateX(${currentSlide * -100}%)`,
-          }}
-        >
-          <div>Slide 1</div>
-          <div>Slide 2</div>
-          <div>Slide 3</div>
-        </div>
-        <button onClick={handlePrev}>Prev</button>
-        <button onClick={handleNext}>Next</button>
-      </div> */}
-      {/* 
-      <div className="main">
-        <div id="header">
-          <h2>Book Now</h2>
-          <p>Required fields are followed by *</p>
-        </div>
-        <div id="divider"></div>
-        <div className="form">
-          <div className="btns margin">
-            <button onClick={goToPrevSlide}>Previous</button>
-            <button className="next" onClick={goToNextSlide}>
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="main">
-        <div id="header">
-          <h2>Book Now</h2>
-          <p>Required fields are followed by *</p>
-        </div>
-        <div id="divider"></div>
-        <div className="form">
-          <div className="btns margin">
-            <button onClick={goToPrevSlide}>Previous</button>
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 }
